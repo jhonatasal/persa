@@ -49,8 +49,9 @@ cp "$SCRIPT_DIR/src/infra/docker_unix.sh"        "$INSTALL_DIR/src/infra/"
 cp "$SCRIPT_DIR/src/commands/port.sh"            "$INSTALL_DIR/src/commands/"
 cp "$SCRIPT_DIR/src/commands/docker.sh"          "$INSTALL_DIR/src/commands/"
 
-# Salva o caminho do projeto para o comando 'update'
+# Salva o caminho do projeto e o método de instalação para o comando 'update'
 echo "$SCRIPT_DIR" > "$SOURCE_REGISTRY"
+echo "${PERSA_INSTALL_METHOD:-local}" > "$INSTALL_DIR/.install-method"
 
 # Atualiza o RC file (remove entrada antiga, adiciona nova)
 if [ "$OS" = "Darwin" ]; then

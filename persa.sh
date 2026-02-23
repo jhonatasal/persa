@@ -46,18 +46,36 @@ _persa_usage() {
 }
 
 _persa_update() {
-  local registry="$_PERSA_INSTALL/.source"
-  if [[ ! -f "$registry" ]]; then
-    echo "${_P_RED}Erro: origem não encontrada. Rode install.sh novamente.${_P_RST}" >&2
-    return 1
+  local method="local"
+  local method_file="$_PERSA_INSTALL/.install-method"
+  [[ -f "$method_file" ]] && method=$(cat "$method_file")
+
+  if [[ "$method" == "remote" ]]; then
+    # Instalado via get.sh → re-busca a versão mais recente do GitHub
+    echo "${_P_CYAN}Atualizando do GitHub...${_P_RST}"
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "https://raw.githubusercontent.com/jhonatasal/persa/main/get.sh" | sh
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO- "https://raw.githubusercontent.com/jhonatasal/persa/main/get.sh" | sh
+    else
+      echo "${_P_RED}Erro: curl ou wget são necessários para atualizar.${_P_RST}" >&2
+      return 1
+    fi
+  else
+    # Instalado via clone local → re-executa install.sh do projeto
+    local registry="$_PERSA_INSTALL/.source"
+    if [[ ! -f "$registry" ]]; then
+      echo "${_P_RED}Erro: origem não encontrada. Rode install.sh novamente.${_P_RST}" >&2
+      return 1
+    fi
+    local project_dir
+    project_dir=$(cat "$registry")
+    if [[ ! -d "$project_dir" ]]; then
+      echo "${_P_RED}Erro: diretório do projeto não existe: $project_dir${_P_RST}" >&2
+      return 1
+    fi
+    sh "$project_dir/install.sh"
   fi
-  local project_dir
-  project_dir=$(cat "$registry")
-  if [[ ! -d "$project_dir" ]]; then
-    echo "${_P_RED}Erro: diretório do projeto não existe: $project_dir${_P_RST}" >&2
-    return 1
-  fi
-  sh "$project_dir/install.sh"
 }
 
 _persa_main() {

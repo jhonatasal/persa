@@ -8,28 +8,49 @@ Funciona em **macOS**, **Linux** e **Windows**.
 
 ## Instalação
 
-### macOS / Linux
+### macOS / Linux — um único comando
 
 ```sh
-git clone git@github.com:jhonatasal/persa.git
-cd persa
-sh install.sh
+curl -fsSL https://raw.githubusercontent.com/jhonatasal/persa/main/get.sh | sh
+```
+
+Ou com `wget`:
+
+```sh
+wget -qO- https://raw.githubusercontent.com/jhonatasal/persa/main/get.sh | sh
+```
+
+Após instalar, recarregue o terminal:
+
+```sh
 source ~/.zshrc   # ou ~/.bashrc
 ```
 
-### Windows (PowerShell)
+### Windows — um único comando (PowerShell)
 
 ```powershell
-git clone git@github.com:jhonatasal/persa.git
-cd persa
-.\install.ps1
-. $PROFILE
+irm https://raw.githubusercontent.com/jhonatasal/persa/main/get.ps1 | iex
 ```
 
 > Se encontrar erro de execution policy:
 > ```powershell
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
+
+Após instalar, recarregue o terminal:
+
+```powershell
+. $PROFILE
+```
+
+### Instalação via clone (desenvolvimento)
+
+```sh
+git clone git@github.com:jhonatasal/persa.git
+cd persa
+sh install.sh       # Unix
+.\install.ps1       # Windows
+```
 
 ---
 
@@ -62,7 +83,8 @@ persa docker clean images --force     # remove sem pedir confirmação
 persa update
 ```
 
-Sincroniza a instalação com a versão mais recente do repositório local.
+- **Instalado via `get.sh`**: busca automaticamente a versão mais recente do GitHub
+- **Instalado via clone**: re-aplica os arquivos do repositório local
 
 ---
 

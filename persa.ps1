@@ -287,17 +287,29 @@ function _Persa_Cmd_Docker_Clean_Images {
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 function _Persa_Update {
-  $registry = "$env:USERPROFILE\.config\powershell\port-manager\.source"
-  if (-not (Test-Path $registry)) {
-    Write-Host "Erro: origem nao encontrada. Rode install.ps1 novamente." -ForegroundColor Red
-    return
+  $installDir  = "$env:USERPROFILE\.config\powershell\port-manager"
+  $methodFile  = "$installDir\.install-method"
+  $method      = if (Test-Path $methodFile) { (Get-Content $methodFile -Raw).Trim() } else { "local" }
+
+  if ($method -eq "remote") {
+    # Instalado via get.ps1 → re-busca a versão mais recente do GitHub
+    Write-Host "Atualizando do GitHub..." -ForegroundColor Cyan
+    $script = Invoke-RestMethod "https://raw.githubusercontent.com/jhonatasal/persa/main/get.ps1"
+    Invoke-Expression $script
+  } else {
+    # Instalado via clone local → re-executa install.ps1 do projeto
+    $registry = "$installDir\.source"
+    if (-not (Test-Path $registry)) {
+      Write-Host "Erro: origem nao encontrada. Rode install.ps1 novamente." -ForegroundColor Red
+      return
+    }
+    $projectDir = (Get-Content $registry -Raw).Trim()
+    if (-not (Test-Path $projectDir)) {
+      Write-Host "Erro: diretorio do projeto nao existe: $projectDir" -ForegroundColor Red
+      return
+    }
+    & "$projectDir\install.ps1"
   }
-  $projectDir = (Get-Content $registry -Raw).Trim()
-  if (-not (Test-Path $projectDir)) {
-    Write-Host "Erro: diretorio do projeto nao existe: $projectDir" -ForegroundColor Red
-    return
-  }
-  & "$projectDir\install.ps1"
 }
 
 function _Persa_Usage {

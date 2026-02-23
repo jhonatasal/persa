@@ -30,8 +30,10 @@ if (-not (Test-Path $InstallDir)) {
 Copy-Item (Join-Path $ScriptDir "persa.ps1") $EntryPoint -Force
 Copy-Item (Join-Path $ScriptDir "cli.conf")  "$InstallDir\cli.conf" -Force
 
-# Salva o caminho do projeto para o comando 'update'
+# Salva o caminho do projeto e o método de instalação para o comando 'update'
 Set-Content -Path $SourceRegistry -Value $ScriptDir -Encoding UTF8
+$installMethod = if ($env:PERSA_INSTALL_METHOD) { $env:PERSA_INSTALL_METHOD } else { "local" }
+Set-Content -Path "$InstallDir\.install-method" -Value $installMethod -Encoding UTF8
 
 # Garante que o diretório e arquivo do perfil existem
 $ProfileDir = Split-Path -Parent $ProfileFile
