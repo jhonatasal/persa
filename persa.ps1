@@ -75,6 +75,19 @@ function _Persa_Docker_Rmi([string]$Id) {
   return $LASTEXITCODE -eq 0
 }
 
+function _Persa_Docker_ListContainers {
+  docker ps -a --format "{{.ID}}`t{{.Names}}`t{{.Status}}`t{{.Image}}" 2>$null
+}
+
+function _Persa_Docker_ContainerIds {
+  (docker ps -aq 2>$null) | Where-Object { $_ }
+}
+
+function _Persa_Docker_Rm([string]$Id) {
+  $output = docker rm -f $Id 2>&1
+  return $LASTEXITCODE -eq 0
+}
+
 # ── Commands Layer — módulo "port" ────────────────────────────────────────────
 
 function _Persa_Cmd_Port {
@@ -195,9 +208,13 @@ function _Persa_Cmd_Docker_Usage {
   Write-Host ""
   Write-Host "  Uso: $n docker <subcomando>" -ForegroundColor White
   Write-Host ""
-  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean images")         -ForegroundColor Cyan
+  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean images")              -ForegroundColor Cyan
   Write-Host "Remove todas as imagens docker"
-  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean images --force") -ForegroundColor Cyan
+  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean images --force")      -ForegroundColor Cyan
+  Write-Host "Remove sem pedir confirmacao"
+  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean containers")          -ForegroundColor Cyan
+  Write-Host "Remove todos os containers docker"
+  Write-Host -NoNewline ("  {0,-44}" -f "$n docker clean containers --force")  -ForegroundColor Cyan
   Write-Host "Remove sem pedir confirmacao"
   Write-Host ""
 }
@@ -209,6 +226,7 @@ function _Persa_Cmd_Docker_Clean {
   switch ($target) {
     { $_ -in @("", "--help", "-h") } { _Persa_Cmd_Docker_Usage; return }
     "images"                         { _Persa_Cmd_Docker_Clean_Images @rest; return }
+    "containers"                     { _Persa_Cmd_Docker_Clean_Containers @rest; return }
     default {
       Write-Host "Erro: recurso desconhecido '$target'. Use '$($_persaConfig.Name) docker --help'." -ForegroundColor Red
     }
@@ -282,6 +300,73 @@ function _Persa_Cmd_Docker_Clean_Images {
 
   Write-Host ""
   Write-Host "✔ Operacao concluida. Verifique com: docker images" -ForegroundColor Green
+}
+
+function _Persa_Cmd_Docker_Clean_Containers {
+  $force = ($args[0] -in @("--force", "-f"))
+  $n     = $_persaConfig.Name
+
+  if (-not (_Persa_Docker_Available)) {
+    Write-Host "Erro: docker nao encontrado ou daemon nao esta em execucao." -ForegroundColor Red
+    return
+  }
+
+  $containers = _Persa_Docker_ListContainers
+  if (-not $containers) {
+    Write-Host "✔ Nenhum container docker encontrado." -ForegroundColor Green
+    return
+  }
+
+  $rows  = @($containers)
+  $count = $rows.Count
+
+  Write-Host -NoNewline "✖ " -ForegroundColor Red
+  Write-Host -NoNewline "$count container(s) encontrado(s):" -ForegroundColor Red
+  Write-Host ""
+  Write-Host ""
+  Write-Host ("  {0,-14} {1,-24} {2,-20} {3}" -f "ID", "NOME", "STATUS", "IMAGEM")
+  Write-Host "  ────────────────────────────────────────────────────────────────────"
+
+  foreach ($row in $rows) {
+    $parts  = $row -split "`t"
+    $id     = if ($parts[0].Length -gt 12) { $parts[0].Substring(0,12) } else { $parts[0] }
+    $name   = $parts[1]
+    $status = $parts[2]
+    $image  = $parts[3]
+    Write-Host -NoNewline "  "
+    Write-Host -NoNewline ("{0,-14}" -f $id) -ForegroundColor Cyan
+    Write-Host (" {0,-24} {1,-20} {2}" -f $name, $status, $image)
+  }
+  Write-Host ""
+
+  if (-not $force) {
+    Write-Host -NoNewline "  Remover todos os containers? [s/N]: " -ForegroundColor Yellow
+    $confirm = Read-Host
+    Write-Host ""
+    if ($confirm -notin @("s", "S")) {
+      Write-Host "Operacao cancelada." -ForegroundColor Yellow
+      return
+    }
+  }
+
+  Write-Host "Removendo containers..." -ForegroundColor Yellow
+  Write-Host ""
+
+  foreach ($id in (_Persa_Docker_ContainerIds)) {
+    if (-not $id) { continue }
+    if (_Persa_Docker_Rm $id) {
+      Write-Host -NoNewline "  "
+      Write-Host -NoNewline "✔ " -ForegroundColor Green
+      Write-Host "$($id.Substring(0,[Math]::Min(12,$id.Length)))"
+    } else {
+      Write-Host -NoNewline "  "
+      Write-Host -NoNewline "✖ " -ForegroundColor Red
+      Write-Host "$($id.Substring(0,[Math]::Min(12,$id.Length)))  (falha ao remover)" -ForegroundColor Red
+    }
+  }
+
+  Write-Host ""
+  Write-Host "✔ Operacao concluida. Verifique com: docker ps -a" -ForegroundColor Green
 }
 
 # ── Entry Point ───────────────────────────────────────────────────────────────

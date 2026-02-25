@@ -26,3 +26,18 @@ _persa_docker_image_tag() {
 _persa_docker_rmi() {
   docker rmi -f "$1" >/dev/null 2>&1
 }
+
+# Retorna uma linha por container: "ID <TAB> NOME <TAB> STATUS <TAB> IMAGEM"
+_persa_docker_list_containers() {
+  docker ps -a --format "{{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" 2>/dev/null
+}
+
+# Retorna IDs de todos os containers
+_persa_docker_container_ids() {
+  docker ps -aq 2>/dev/null
+}
+
+# Remove um container pelo ID (força remoção)
+_persa_docker_rm() {
+  docker rm -f "$1" >/dev/null 2>&1
+}
